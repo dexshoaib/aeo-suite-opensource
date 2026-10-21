@@ -24,7 +24,7 @@ Repository scaffold, CI and the backend foundation (Django 6, multi-tenancy base
 
 ## Early pilots
 
-I'm looking for a few agencies and site owners to try early versions and shape what gets built. Sign up: [Fill the form for early free acess to software](tinyurl.com/AEO-Suite-SignUP) | [LinkedIn](https://www.linkedin.com/in/shoaib-alam-ansari-88b197377) Or [DM on X](https://x.com/dexshoaib) .
+I'm looking for a few agencies and site owners to try early versions and shape what gets built. Sign up: [Fill the form for free early access to software](tinyurl.com/AEO-Suite-SignUP) | [LinkedIn](https://www.linkedin.com/in/shoaib-alam-ansari-88b197377) Or [DM on X](https://x.com/dexshoaib) .
 
 ## Stack
 
