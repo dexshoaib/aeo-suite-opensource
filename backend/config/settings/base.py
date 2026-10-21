@@ -40,7 +40,12 @@ INSTALLED_APPS = [
     "drf_spectacular",
     # Project apps (chunk 0.2, Tasks 3-6)
     "apps.core",  # Task 3: base models, tenancy primitives, health view
+    "apps.accounts",  # Task 4: custom user, organizations, workspaces, memberships
 ]
+
+# Custom user - MUST be set before the first migrate (SPEC-0.2 decision 2;
+# retrofitting it later is the one auth change Django makes genuinely painful).
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
