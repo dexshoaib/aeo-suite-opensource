@@ -1,13 +1,11 @@
 """
-Shared settings for the AEO Suite backend (chunk 0.2 skeleton).
+Shared settings for the AEO Suite backend.
 
-Settings grow chunk by chunk: this file is the Task 2 baseline (Django +
-DRF + drf-spectacular). The core/accounts apps (Tasks 3-6), allauth
-headless (Task 7) and the strict schema config (Task 8) are added here as
-full-file replacements in their own commits.
-
-All environment values come from the repo-root .env via django-environ
-(see .env.example). The .env file is gitignored and never committed.
+Settings grow feature by feature as full-file replacements in their own
+commits: this baseline carries Django core, DRF with the
+drf-spectacular schema class, and the project apps. All environment
+values come from the repo-root .env via django-environ (see
+.env.example). The .env file is gitignored and never committed.
 """
 
 from pathlib import Path
@@ -22,7 +20,7 @@ env = environ.Env(
     DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     DATABASE_URL=(str, "postgres://postgres:postgres@localhost:5432/aeo_suite"),
 )
-environ.Env.read_env(BASE_DIR.parent / ".env")  # repo-root .env (0.1 convention)
+environ.Env.read_env(BASE_DIR.parent / ".env")  # repo-root .env
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
@@ -35,16 +33,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Third-party (chunk 0.2)
+    # Third-party
     "rest_framework",
     "drf_spectacular",
-    # Project apps (chunk 0.2, Tasks 3-6)
-    "apps.core",  # Task 3: base models, tenancy primitives, health view
-    "apps.accounts",  # Task 4: custom user, organizations, workspaces, memberships
+    # Project apps
+    "apps.core",  # base models, tenancy primitives, health view
+    "apps.accounts",  # custom user, organizations, workspaces, memberships
 ]
 
-# Custom user - MUST be set before the first migrate (SPEC-0.2 decision 2;
-# retrofitting it later is the one auth change Django makes genuinely painful).
+# Custom user - MUST be set before the first migrate; retrofitting it
+# later is the one auth change Django makes genuinely painful.
 AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
@@ -78,6 +76,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": env.db(),
+}
+
+REST_FRAMEWORK = {
+    # drf-spectacular's AutoSchema drives all schema generation; DRF's
+    # built-in default is incompatible with it.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 AUTH_PASSWORD_VALIDATORS = [
