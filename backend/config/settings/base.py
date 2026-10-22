@@ -117,7 +117,7 @@ SPECTACULAR_SETTINGS = {
 SITE_ID = 1
 HEADLESS_ONLY = True
 ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
 # Confirmation mail prints to the console in development and login is
 # not blocked on verification; real email delivery is pre-launch
 # hardening.
@@ -125,6 +125,19 @@ ACCOUNT_EMAIL_VERIFICATION = "optional"
 # allauth publishes its own OpenAPI spec for the auth endpoints at
 # /api/auth/openapi.{yaml,json} — kept separate from the DRF schema.
 HEADLESS_SERVE_SPECIFICATION = True
+# The user model is email-only (no username attribute); allauth must
+# not assume one when it renders user data.
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# Frontend routes for mails and redirects: required under
+# HEADLESS_ONLY whenever a flow needs to link back to the frontend
+# (verification and password mails). The Next.js app owns these paths.
+HEADLESS_FRONTEND_URLS = {
+    "account_confirm_email": "/account/verify-email/?key={key}",
+    "account_reset_password": "/account/password/reset/",
+    "account_reset_password_from_key": "/account/password/reset/key/{key}",
+    "account_change_password": "/account/password/change/",
+    "account_set_password": "/account/password/set/",
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
