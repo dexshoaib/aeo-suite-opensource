@@ -100,6 +100,18 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+# Strict schema serving: warnings fail the build because the frontend's
+# TypeScript client is generated from this schema.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "AEO Suite API",
+    "VERSION": "0.1.0",
+    # The schema endpoint should not document itself.
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Browsing stays possible even once strict default permissions
+    # land later.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+}
+
 # Cookie-session auth, JSON only: the headless endpoints under
 # /api/auth/ are the single auth surface (no server-rendered auth pages).
 SITE_ID = 1
@@ -110,6 +122,9 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 # not blocked on verification; real email delivery is pre-launch
 # hardening.
 ACCOUNT_EMAIL_VERIFICATION = "optional"
+# allauth publishes its own OpenAPI spec for the auth endpoints at
+# /api/auth/openapi.{yaml,json} — kept separate from the DRF schema.
+HEADLESS_SERVE_SPECIFICATION = True
 
 AUTH_PASSWORD_VALIDATORS = [
     {
