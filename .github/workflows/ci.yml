@@ -1,10 +1,10 @@
-# AEO Suite CI skeleton (chunk 0.1).
+# AEO Suite CI.
 #
 # Stage order (product rule): lint -> typecheck -> unit -> build ->
-# integration -> e2e -> security audit. Stages light up as chunks land;
-# each area job below currently runs a GUARDED placeholder: if real
-# project files appear without the stage being wired, the job FAILS.
-# Green-with-placeholders is not allowed to become silent fake-green.
+# integration -> e2e -> security audit. Stages light up as areas land;
+# an area not yet wired runs a GUARDED placeholder: if real project
+# files appear without the stage being wired, the job FAILS.
+# Green-with-placeholders must never become silent fake-green.
 
 name: CI
 
@@ -14,84 +14,80 @@ on:
   pull_request:
 
 jobs:
-  changes:
-    name: Detect changed areas
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      crawler: ${{ steps.filter.outputs.crawler }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
-            crawler:
-              - 'crawler/**'
-
-  skeleton:
+  alive:
     name: Workflow alive (always on)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Prove the workflow itself executes
-        run: echo "CI skeleton alive on ${GITHUB_SHA::7}"
+        run: echo "CI alive on ${GITHUB_SHA::7}"
 
   backend:
-    name: backend - lint + typecheck (ruff)
-    needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    name: backend - lint, checks, strict schema, pytest (postgres)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # The service container below owns this DSN; pytest-django
+      # creates and destroys test_aeo_suite around the run.
+      DATABASE_URL: postgres://aeo:aeo@localhost:5432/aeo_suite
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: aeo
+          POSTGRES_PASSWORD: aeo
+          POSTGRES_DB: aeo_suite
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aeo -d aeo_suite"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - name: Guarded placeholder
-        run: |
-          if [ -f backend/pyproject.toml ] || [ -f backend/manage.py ]; then
-            echo "::error::backend/ contains real code but ruff stage is not wired yet."
-            echo "::error::Wire lint+typecheck for real in chunk 0.2 before merging."
-            exit 1
-          fi
-          echo "backend/ has only placeholders - ruff lands in chunk 0.2"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies (locked)
+        run: uv sync --locked
+      - name: Lint (ruff)
+        run: uv run ruff check .
+      - name: System checks
+        run: uv run python manage.py check
+      - name: Migrations are complete
+        run: uv run python manage.py makemigrations --check --dry-run
+      - name: OpenAPI schema, strict (zero warnings tolerated)
+        run: uv run python manage.py spectacular --file /tmp/schema.yaml --validate --fail-on-warn
+      - name: Test suite on real Postgres
+        run: uv run pytest
 
   frontend:
-    name: frontend - lint + typecheck (eslint + tsc)
-    needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    name: frontend - guarded placeholder
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Guarded placeholder
         run: |
           if [ -f frontend/package.json ]; then
-            echo "::error::frontend/ contains real code but eslint+tsc stage is not wired yet."
-            echo "::error::Wire lint+typecheck for real in chunk 0.3 before merging."
+            echo "::error::frontend/ contains real code but eslint+tsc are not wired yet."
+            echo "::error::Wire lint+typecheck for the frontend app before merging."
             exit 1
           fi
-          echo "frontend/ has only placeholders - eslint+tsc land in chunk 0.3"
+          echo "frontend/ has only placeholders - eslint+tsc land with the frontend app"
 
   crawler:
-    name: crawler - fmt + clippy + check (cargo)
-    needs: changes
-    if: ${{ needs.changes.outputs.crawler == 'true' }}
+    name: crawler - guarded placeholder
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Guarded placeholder
         run: |
           if [ -f crawler/Cargo.toml ]; then
-            echo "::error::crawler/ contains real code but cargo stage is not wired yet."
-            echo "::error::Wire cargo fmt --check + clippy -D warnings + cargo check in chunk 1.1."
+            echo "::error::crawler/ contains real code but the cargo stage is not wired yet."
+            echo "::error::Wire cargo fmt --check + clippy -D warnings + cargo check before merging."
             exit 1
           fi
-          echo "crawler/ has only placeholders - cargo checks land in chunk 1.1"
-
-  # TODO(chunk-0.2): unit tests - pytest with a real Postgres service container
-  # TODO(chunk-0.3): build - pnpm build for frontend/ (and client regen check)
-  # TODO(chunk-1.3): integration tests - Django + queue round-trip
-  # TODO(chunk-0.3+): e2e - Playwright flows
-  # TODO(chunk-0.2): security audit - pip-audit + npm audit + cargo audit as areas land
+          echo "crawler/ has only placeholders - cargo checks land with the crawler service"
