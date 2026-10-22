@@ -10,12 +10,13 @@ from .base import env
 
 DEBUG = True
 
-EMAIL_BACKEND = "django.core.email.backends.console.EmailBackend"
+# Signup and verification mail prints to the runserver console.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# ADR-0005: dev auth runs behind the Next.js same-origin proxy (chunk 0.3).
-# The browser only ever talks to localhost:3000; Django keeps CSRF on and
-# trusts that single frontend origin. This placeholder lands in 0.2 per
-# the ADR; production adds its real frontend origin at deploy time.
+# Development auth runs behind the frontend dev server: the browser only
+# ever talks to localhost:3000 and Django keeps CSRF on, trusting that
+# single frontend origin. Production adds its real frontend origin at
+# deploy time.
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
     default=["http://localhost:3000"],
