@@ -5,6 +5,12 @@
 # an area not yet wired runs a GUARDED placeholder: if real project
 # files appear without the stage being wired, the job FAILS.
 # Green-with-placeholders must never become silent fake-green.
+#
+# frontend: the guarded placeholder was retired in the same change that
+# landed the app skeleton (package.json et al.) — the same-change rule
+# the backend job followed. The real frontend job (install with
+# --frozen-lockfile / lint / typecheck / test / build / client drift
+# gate) arrives with the frontend CI wiring.
 
 name: CI
 
@@ -63,20 +69,6 @@ jobs:
         run: uv run python manage.py spectacular --file /tmp/schema.yaml --validate --fail-on-warn
       - name: Test suite on real Postgres
         run: uv run pytest
-
-  frontend:
-    name: frontend - guarded placeholder
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Guarded placeholder
-        run: |
-          if [ -f frontend/package.json ]; then
-            echo "::error::frontend/ contains real code but eslint+tsc are not wired yet."
-            echo "::error::Wire lint+typecheck for the frontend app before merging."
-            exit 1
-          fi
-          echo "frontend/ has only placeholders - eslint+tsc land with the frontend app"
 
   crawler:
     name: crawler - guarded placeholder

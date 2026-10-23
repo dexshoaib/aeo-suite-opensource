@@ -2,7 +2,7 @@
 # so it does NOT exclude .claude/skills/ (agent skills ARE repo content)
 /skills/
 
-# Python (backend, from chunk 0.2)
+# Python (backend)
 __pycache__/
 *.py[cod]
 .venv/
@@ -10,12 +10,18 @@ venv/
 .pytest_cache/
 *.egg-info/
 
-# Node / Next.js (frontend, from chunk 0.3)
+# Node / Next.js (frontend)
 node_modules/
 .next/
+out/
 dist/
+next-env.d.ts
+*.tsbuildinfo
+coverage/
+test-results/
+playwright-report/
 
-# Rust (crawler, from chunk 1.1)
+# Rust (crawler)
 target/
 
 # Environment & secrets — never commit real values
