@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/account/verify-email",
+        destination: "/verify-email",
+      },
+      {
+        source: "/account/verify-email/",
+        destination: "/verify-email",
+      },
+      {
         source: "/api/:path*",
         destination: `${backendOrigin}/api/:path*`,
       },

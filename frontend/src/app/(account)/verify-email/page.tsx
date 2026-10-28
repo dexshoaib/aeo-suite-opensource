@@ -3,14 +3,15 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { verifyEmail } from "@/lib/api/auth";
+import { normalizeVerificationKey, verifyEmail } from "@/lib/api/auth";
 
 function VerifyEmailForm() {
   const searchParams = useSearchParams();
   const urlKey = searchParams.get("key") ?? "";
 
   const [customKey, setCustomKey] = useState<string | null>(null);
-  const key = customKey !== null ? customKey : urlKey;
+  const rawKey = customKey !== null ? customKey : urlKey;
+  const key = rawKey;
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -18,7 +19,8 @@ function VerifyEmailForm() {
 
   const handleVerify = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!key.trim()) {
+    const cleanKey = normalizeVerificationKey(key);
+    if (!cleanKey) {
       setError("Please provide a verification key.");
       return;
     }
@@ -27,7 +29,7 @@ function VerifyEmailForm() {
     setSubmitting(true);
 
     try {
-      const res = await verifyEmail(key.trim());
+      const res = await verifyEmail(cleanKey);
       if (res.success) {
         setSuccess(true);
       } else {

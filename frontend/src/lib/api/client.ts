@@ -11,6 +11,31 @@ export function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+let csrfPromise: Promise<string | null> | null = null;
+
+/**
+ * Ensure a CSRF token is available in document.cookie.
+ * If missing, primes it by fetching allauth headless config.
+ */
+export async function ensureCsrfToken(): Promise<string | null> {
+  if (typeof document === "undefined") return null;
+  const existing = getCsrfToken();
+  if (existing) return existing;
+
+  if (!csrfPromise) {
+    csrfPromise = fetch("/api/auth/browser/v1/config", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(() => getCsrfToken())
+      .catch(() => null)
+      .finally(() => {
+        csrfPromise = null;
+      });
+  }
+  return csrfPromise;
+}
+
 const csrfAndOrgMiddleware: Middleware = {
   async onRequest({ request }) {
     // 1. Attach CSRF token on mutating requests
@@ -18,7 +43,7 @@ const csrfAndOrgMiddleware: Middleware = {
       typeof document !== "undefined" &&
       !["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase())
     ) {
-      const csrfToken = getCsrfToken();
+      const csrfToken = await ensureCsrfToken();
       if (csrfToken && !request.headers.has("X-CSRFToken")) {
         request.headers.set("X-CSRFToken", csrfToken);
       }

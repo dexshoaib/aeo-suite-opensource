@@ -1,4 +1,4 @@
-import { getCsrfToken } from "./client";
+import { ensureCsrfToken } from "./client";
 import { clearSelectedOrgId } from "../org";
 
 export interface AuthUser {
@@ -39,7 +39,7 @@ async function authFetch<T>(
     typeof document !== "undefined" &&
     !["GET", "HEAD", "OPTIONS"].includes(method)
   ) {
-    const csrf = getCsrfToken();
+    const csrf = await ensureCsrfToken();
     if (csrf && !headers.has("X-CSRFToken")) {
       headers.set("X-CSRFToken", csrf);
     }
@@ -146,16 +146,20 @@ export async function signup(credentials: AuthCredentials): Promise<{
   user?: AuthUser;
   errors?: AuthError[];
 }> {
-  const res = await authFetch<{ user: AuthUser }>(
-    "/api/auth/browser/v1/auth/signup",
-    {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    }
-  );
+  const res = await authFetch<{
+    user?: AuthUser;
+    flows?: Array<{ id: string; is_pending?: boolean }>;
+  }>("/api/auth/browser/v1/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(credentials),
+  });
 
-  if (res.ok && res.data?.user) {
-    return { success: true, user: res.data.user };
+  // Allauth returns 200 (authenticated) or 401 (created, pending email verification)
+  const isPendingVerification =
+    res.status === 401 && (!res.errors || res.errors.length === 0);
+
+  if (res.ok || isPendingVerification) {
+    return { success: true, user: res.data?.user };
   }
   return {
     success: false,
@@ -185,6 +189,43 @@ export async function logout(): Promise<boolean> {
 }
 
 /**
+ * Normalizes a verification key. Handles:
+ * - Full URLs or query parameters (e.g. "?key=..." or "/account/verify-email/?key=...")
+ * - URL encoding (e.g. %3A -> :) produced by Django's URL renderer
+ * - Whitespace, wrapping quotes, or trailing punctuation from console copying
+ */
+export function normalizeVerificationKey(rawKey: string): string {
+  let k = rawKey.trim();
+
+  // If user copied the full URL or query string, extract the key parameter
+  if (k.includes("key=")) {
+    const match = k.match(/[?&]key=([^&#\s]+)/) || k.match(/^key=([^&#\s]+)/);
+    if (match) {
+      k = match[1];
+    }
+  }
+
+  // Strip wrapping quotes
+  k = k.replace(/^["']|["']$/g, "");
+
+  // Strip internal whitespace or newlines from terminal line wrapping
+  k = k.replace(/\s+/g, "");
+
+  // Repeatedly decode URI components (e.g. %3A -> :)
+  while (k.includes("%")) {
+    try {
+      const decoded = decodeURIComponent(k);
+      if (decoded === k) break;
+      k = decoded;
+    } catch {
+      break;
+    }
+  }
+
+  return k.trim();
+}
+
+/**
  * Verify email address with key from verification email.
  * POST /api/auth/browser/v1/auth/email/verify
  */
@@ -192,11 +233,12 @@ export async function verifyEmail(key: string): Promise<{
   success: boolean;
   errors?: AuthError[];
 }> {
+  const normalizedKey = normalizeVerificationKey(key);
   const res = await authFetch<{ user?: AuthUser }>(
     "/api/auth/browser/v1/auth/email/verify",
     {
       method: "POST",
-      body: JSON.stringify({ key }),
+      body: JSON.stringify({ key: normalizedKey }),
     }
   );
 
@@ -222,8 +264,9 @@ export async function getEmailVerificationInfo(key: string): Promise<{
   user?: AuthUser;
   error?: string;
 }> {
+  const normalizedKey = normalizeVerificationKey(key);
   const res = await authFetch<{ email?: string; user?: AuthUser }>(
-    `/api/auth/browser/v1/auth/email/verify?key=${encodeURIComponent(key)}`,
+    `/api/auth/browser/v1/auth/email/verify?key=${encodeURIComponent(normalizedKey)}`,
     { method: "GET" }
   );
 
