@@ -6,11 +6,10 @@
 # files appear without the stage being wired, the job FAILS.
 # Green-with-placeholders must never become silent fake-green.
 #
-# frontend: the guarded placeholder was retired in the same change that
-# landed the app skeleton (package.json et al.) — the same-change rule
-# the backend job followed. The real frontend job (install with
-# --frozen-lockfile / lint / typecheck / test / build / client drift
-# gate) arrives with the frontend CI wiring.
+# frontend: install with --frozen-lockfile, lint, typecheck, unit
+# tests (vitest), build (next build), and the client drift gate
+# (regenerates from the backend's strict OpenAPI schema and asserts
+# zero diff on schema.d.ts).
 
 name: CI
 
@@ -69,6 +68,45 @@ jobs:
         run: uv run python manage.py spectacular --file /tmp/schema.yaml --validate --fail-on-warn
       - name: Test suite on real Postgres
         run: uv run pytest
+
+  frontend:
+    name: frontend - install, lint, typecheck, test, build, client drift gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json   # the packageManager pin lives here, not at repo root
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22                            # matches engines.node >=22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install dependencies (locked)
+        run: pnpm install --frozen-lockfile
+      - name: Lint (eslint)
+        run: pnpm lint
+      - name: Typecheck (tsc --noEmit)
+        run: pnpm typecheck
+      - name: Unit tests (vitest)
+        run: pnpm test
+      - name: Build (next build)
+        run: pnpm build
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Export OpenAPI schema from backend
+        working-directory: backend
+        run: |
+          uv sync --locked
+          uv run python manage.py spectacular --file /tmp/schema.yaml
+      - name: Client drift gate (schema.d.ts must be current)
+        run: |
+          pnpm exec openapi-typescript /tmp/schema.yaml -o src/lib/api/schema.d.ts
+          git diff --exit-code -- src/lib/api/schema.d.ts
 
   crawler:
     name: crawler - guarded placeholder
