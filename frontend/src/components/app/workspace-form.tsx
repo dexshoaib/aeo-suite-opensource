@@ -17,11 +17,13 @@ interface WorkspaceItem {
 interface WorkspaceFormProps {
   selectedOrgId: string | null;
   onOrg404Reset?: (newOrgId: string | null, notice: string) => void;
+  onWorkspacesChange?: (workspaces: WorkspaceItem[]) => void;
 }
 
 export function WorkspaceForm({
   selectedOrgId,
   onOrg404Reset,
+  onWorkspacesChange,
 }: WorkspaceFormProps) {
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,9 +68,16 @@ export function WorkspaceForm({
         }
 
         if (response.ok && data) {
-          if (!ignore) setWorkspaces(data as unknown as WorkspaceItem[]);
+          const items = data as unknown as WorkspaceItem[];
+          if (!ignore) {
+            setWorkspaces(items);
+            onWorkspacesChange?.(items);
+          }
         } else {
-          if (!ignore) setWorkspaces([]);
+          if (!ignore) {
+            setWorkspaces([]);
+            onWorkspacesChange?.([]);
+          }
         }
       } catch {
         if (!ignore) {
@@ -85,7 +94,7 @@ export function WorkspaceForm({
     return () => {
       ignore = true;
     };
-  }, [selectedOrgId, onOrg404Reset]);
+  }, [selectedOrgId, onOrg404Reset, onWorkspacesChange]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,7 +126,12 @@ export function WorkspaceForm({
 
       if (response.ok && data) {
         setName("");
-        setWorkspaces((prev) => [...prev, data as unknown as WorkspaceItem]);
+        const newItem = data as unknown as WorkspaceItem;
+        setWorkspaces((prev) => {
+          const next = [...prev, newItem];
+          onWorkspacesChange?.(next);
+          return next;
+        });
       } else {
         const errObj = err as unknown as { name?: string[] } | undefined;
         const msg = errObj?.name?.[0] ?? "Failed to create workspace.";

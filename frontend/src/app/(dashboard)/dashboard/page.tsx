@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { logout } from "@/lib/api/auth";
 import { OrgSwitcher } from "@/components/app/org-switcher";
 import { WorkspaceForm } from "@/components/app/workspace-form";
+import { SiteList } from "@/components/app/site-list";
 import { HealthBadge } from "@/components/app/health-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,9 +15,15 @@ export default function DashboardPage() {
   const router = useRouter();
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [workspaces, setWorkspaces] = useState<{ id: string; name: string }[]>([]);
 
   const handleOrgChange = useCallback((orgId: string | null) => {
     setSelectedOrgId(orgId);
+    setWorkspaces([]);
+  }, []);
+
+  const handleWorkspacesChange = useCallback((items: { id: string; name: string }[]) => {
+    setWorkspaces(items);
   }, []);
 
   const handleResetNotice = useCallback((msg: string | null) => {
@@ -25,6 +32,7 @@ export default function DashboardPage() {
 
   const handleOrg404Reset = useCallback((fallbackOrgId: string | null, resetNotice: string) => {
     setSelectedOrgId(fallbackOrgId);
+    setWorkspaces([]);
     setNotice(resetNotice);
   }, []);
 
@@ -102,6 +110,13 @@ export default function DashboardPage() {
 
           <WorkspaceForm
             selectedOrgId={selectedOrgId}
+            onOrg404Reset={handleOrg404Reset}
+            onWorkspacesChange={handleWorkspacesChange}
+          />
+
+          <SiteList
+            selectedOrgId={selectedOrgId}
+            workspaces={workspaces}
             onOrg404Reset={handleOrg404Reset}
           />
         </div>
