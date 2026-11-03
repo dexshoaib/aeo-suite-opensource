@@ -15,10 +15,12 @@ from rest_framework.routers import DefaultRouter
 
 from apps.accounts.views import OrganizationViewSet, WorkspaceViewSet
 from apps.core.views import HealthView
+from apps.sites.views import SiteViewSet
 
 router = DefaultRouter()
 router.register("organizations", OrganizationViewSet, basename="organizations")
 router.register("workspaces", WorkspaceViewSet, basename="workspaces")
+router.register("sites", SiteViewSet, basename="sites")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

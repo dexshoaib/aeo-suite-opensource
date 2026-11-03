@@ -102,6 +102,44 @@ export interface paths {
         patch: operations["v1_organizations_partial_update"];
         trace?: never;
     };
+    "/api/v1/sites/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List/CRUD for sites inside the selected organization. */
+        get: operations["v1_sites_list"];
+        put?: never;
+        /** @description List/CRUD for sites inside the selected organization. */
+        post: operations["v1_sites_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sites/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List/CRUD for sites inside the selected organization. */
+        get: operations["v1_sites_retrieve"];
+        /** @description List/CRUD for sites inside the selected organization. */
+        put: operations["v1_sites_update"];
+        post?: never;
+        /** @description List/CRUD for sites inside the selected organization. */
+        delete: operations["v1_sites_destroy"];
+        options?: never;
+        head?: never;
+        /** @description List/CRUD for sites inside the selected organization. */
+        patch: operations["v1_sites_partial_update"];
+        trace?: never;
+    };
     "/api/v1/workspaces/": {
         parameters: {
             query?: never;
@@ -200,6 +238,23 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
         };
+        /** @description Serialize a site; organization is bound server-side from resolved context. */
+        PatchedSite: {
+            /** Format: uuid */
+            readonly id?: string;
+            /** Format: uuid */
+            readonly organization?: string;
+            /** Format: uuid */
+            workspace?: string;
+            name?: string;
+            domain?: string;
+            readonly verification_status?: components["schemas"]["VerificationStatusEnum"];
+            readonly verification_token?: string;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+        };
         /** @description Serialize a workspace; its organization is bound server-side on create. */
         PatchedWorkspace: {
             /** Format: uuid */
@@ -212,6 +267,30 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
         };
+        /** @description Serialize a site; organization is bound server-side from resolved context. */
+        Site: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly organization: string;
+            /** Format: uuid */
+            workspace: string;
+            name: string;
+            domain: string;
+            readonly verification_status: components["schemas"]["VerificationStatusEnum"];
+            readonly verification_token: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `pending` - Pending Verification
+         *     * `verified` - Verified
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        VerificationStatusEnum: "pending" | "verified" | "failed";
         /** @description Serialize a workspace; its organization is bound server-side on create. */
         Workspace: {
             /** Format: uuid */
@@ -397,6 +476,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Organization"];
+                };
+            };
+        };
+    };
+    v1_sites_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"][];
+                };
+            };
+        };
+    };
+    v1_sites_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Site"];
+                "application/x-www-form-urlencoded": components["schemas"]["Site"];
+                "multipart/form-data": components["schemas"]["Site"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"];
+                };
+            };
+        };
+    };
+    v1_sites_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this site. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"];
+                };
+            };
+        };
+    };
+    v1_sites_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this site. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Site"];
+                "application/x-www-form-urlencoded": components["schemas"]["Site"];
+                "multipart/form-data": components["schemas"]["Site"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"];
+                };
+            };
+        };
+    };
+    v1_sites_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this site. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    v1_sites_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this site. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSite"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSite"];
+                "multipart/form-data": components["schemas"]["PatchedSite"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"];
                 };
             };
         };
