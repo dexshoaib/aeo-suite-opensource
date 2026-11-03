@@ -162,3 +162,21 @@ def test_delete_own_site(authed_client_a, org_a, site_a):
     resp = authed_client_a.delete(url, HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 204
     assert not Site.objects.filter(pk=site_a.pk).exists()
+
+
+def test_filter_sites_by_malformed_workspace_yields_empty(
+    authed_client_a, org_a, workspace_a, site_a
+):
+    """A malformed workspace selector behaves like an unknown one: empty list.
+
+    Regression guard: Django's UUID field conversion raises on a
+    non-UUID string, which used to surface as an unhandled 500.
+    """
+    url = reverse("sites-list")
+    resp = authed_client_a.get(
+        f"{url}?workspace=not-a-uuid",
+        HTTP_X_ORGANIZATION_ID=str(org_a.pk),
+    )
+    assert resp.status_code == 200
+    assert resp.json() == []
+

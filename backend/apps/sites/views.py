@@ -5,6 +5,8 @@ TENANT_VIEWSET_REGISTRY for the structural cross-tenant leak test.
 Foreign sites answer 404, never 403.
 """
 
+import uuid
+
 from rest_framework.permissions import IsAuthenticated
 
 from apps.core.tenancy import TenantViewSet
@@ -23,6 +25,12 @@ class SiteViewSet(TenantViewSet):
         qs = super().get_queryset()
         workspace_id = self.request.query_params.get("workspace")
         if workspace_id:
+            try:
+                uuid.UUID(workspace_id)
+            except (ValueError, AttributeError):
+                # Malformed selector behaves like an unknown one: empty
+                # result, never a 500 from the UUID field conversion.
+                return qs.none()
             qs = qs.filter(workspace_id=workspace_id)
         return qs
 
