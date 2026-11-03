@@ -9,6 +9,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Membership, Organization, User, Workspace
+from apps.sites.models import Site
 
 
 @pytest.fixture
@@ -67,3 +68,23 @@ def authed_client_a(api_client, user_a):
     """DRF client authenticated as user_a (session-independent)."""
     api_client.force_authenticate(user=user_a)
     return api_client
+
+
+@pytest.fixture
+def site_a(org_a, workspace_a):
+    return Site.objects.create(
+        organization=org_a,
+        workspace=workspace_a,
+        name="Site A1",
+        domain="site-a1.example.com",
+    )
+
+
+@pytest.fixture
+def site_b(org_b, workspace_b):
+    return Site.objects.create(
+        organization=org_b,
+        workspace=workspace_b,
+        name="Site B1",
+        domain="site-b1.example.com",
+    )

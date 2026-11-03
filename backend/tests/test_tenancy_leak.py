@@ -71,13 +71,24 @@ def test_every_concrete_tenant_viewset_is_routed():
 
 @pytest.mark.parametrize("viewset_name", ROUTE_IDS)
 def test_foreign_org_rows_hidden_on_every_method(
-    viewset_name, authed_client_a, org_a, org_b, workspace_a, workspace_b
+    viewset_name,
+    authed_client_a,
+    org_a,
+    org_b,
+    workspace_a,
+    workspace_b,
+    site_a,
+    site_b,
 ):
     viewset, basename = TENANT_ROUTES[viewset_name]
     model = viewset.queryset.model
-    own_row, foreign_row = (
-        (org_a, org_b) if model is Organization else (workspace_a, workspace_b)
-    )
+    if model is Organization:
+        own_row, foreign_row = org_a, org_b
+    elif model is Workspace:
+        own_row, foreign_row = workspace_a, workspace_b
+    else:
+        own_row, foreign_row = site_a, site_b
+
     list_url = reverse(f"{basename}-list")
     foreign_detail_url = reverse(f"{basename}-detail", args=[foreign_row.pk])
     own_header = {"HTTP_X_ORGANIZATION_ID": str(org_a.pk)}
@@ -104,11 +115,15 @@ def test_foreign_org_rows_hidden_on_every_method(
 
 def _grant_accounts_permissions(user):
     user.user_permissions.add(
-        *Permission.objects.filter(content_type__app_label="accounts")
+        *Permission.objects.filter(
+            content_type__app_label__in=["accounts", "client_sites"]
+        )
     )
 
 
-def test_admin_hides_foreign_org_rows(client, user_a, org_a, org_b, workspace_a, workspace_b):
+def test_admin_hides_foreign_org_rows(
+    client, user_a, org_a, org_b, workspace_a, workspace_b, site_a, site_b
+):
     user_a.is_staff = True
     user_a.save()
     _grant_accounts_permissions(user_a)
@@ -121,6 +136,11 @@ def test_admin_hides_foreign_org_rows(client, user_a, org_a, org_b, workspace_a,
             reverse("admin:accounts_membership_changelist"),
             "owner-a@example.com",
             "owner-b@example.com",
+        ),
+        (
+            reverse("admin:client_sites_site_changelist"),
+            "Site A1",
+            "Site B1",
         ),
     ]
     for url, visible, hidden in changelists:
@@ -141,6 +161,11 @@ def test_admin_hides_foreign_org_rows(client, user_a, org_a, org_b, workspace_a,
     )
     assert foreign_org.status_code == 302
     assert foreign_org.url == reverse("admin:index")
+    foreign_site = client.get(
+        reverse("admin:client_sites_site_change", args=[site_b.pk])
+    )
+    assert foreign_site.status_code == 302
+    assert foreign_site.url == reverse("admin:index")
 
 
 def test_admin_superuser_keeps_full_view(client, user_a, org_a, org_b, workspace_a, workspace_b):
