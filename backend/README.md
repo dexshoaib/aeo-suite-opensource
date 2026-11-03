@@ -96,6 +96,8 @@ From `backend/`, the same checks CI runs on every push:
     uv run python manage.py spectacular --file "$env:TEMP\schema.yaml" --validate --fail-on-warn
     uv run pytest
 
+(on macOS/Linux, substitute `/tmp/schema.yaml` for `"$env:TEMP\schema.yaml"`).
+
 The schema gate is strict — zero warnings tolerated — because the
 frontend's TypeScript client is generated from `/api/schema/`.
 

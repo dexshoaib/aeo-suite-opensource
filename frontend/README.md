@@ -110,6 +110,8 @@ an exported schema file:
     cd ../frontend
     pnpm exec openapi-typescript "$env:TEMP\schema.yaml" -o src/lib/api/schema.d.ts
 
+(on macOS/Linux, substitute `/tmp/schema.yaml` for `"$env:TEMP\schema.yaml"`).
+
 ### The Schema Drift Contract
 Whenever a backend serializer, view, or URL changes, **regenerate and commit
 `schema.d.ts` in the same change**. CI runs `git diff --exit-code -- src/lib/api/schema.d.ts`;
