@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # Project apps
     "apps.core",  # base models, tenancy primitives, health view
     "apps.accounts",  # custom user, organizations, workspaces, memberships
+    "apps.sites",  # client sites and domains
 ]
 
 # Custom user - MUST be set before the first migrate; retrofitting it
