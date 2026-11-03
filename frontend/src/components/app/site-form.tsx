@@ -45,9 +45,9 @@ export function SiteForm({
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen) {
-      if (!workspaceId && workspaces.length > 0) {
-        setWorkspaceId(defaultWorkspaceId || workspaces[0].id);
-      }
+      // Always resync on open so the form follows the workspace filter
+      // the user just picked, instead of a stale selection from mount.
+      setWorkspaceId(defaultWorkspaceId || workspaces[0]?.id || "");
       setError(null);
     }
   };
@@ -57,6 +57,21 @@ export function SiteForm({
     const effectiveWorkspaceId = workspaceId || defaultWorkspaceId || workspaces[0]?.id;
     if (!selectedOrgId || !name.trim() || !domain.trim() || !effectiveWorkspaceId) {
       setError("Please fill out all fields.");
+      return;
+    }
+
+    // Mirror the server-side normalization, then require a dotted host
+    // before anything is sent (SPEC-1.1 criterion 6).
+    const host = domain
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .split("/")[0]
+      .split("?")[0]
+      .split("#")[0]
+      .split(":")[0];
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(host)) {
+      setError("Enter a valid domain (e.g. example.com).");
       return;
     }
 
@@ -70,7 +85,7 @@ export function SiteForm({
         },
         body: {
           name: name.trim(),
-          domain: domain.trim(),
+          domain: host,
           workspace: effectiveWorkspaceId,
         } as unknown as {
           name: string;
