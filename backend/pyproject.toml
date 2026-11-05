@@ -10,6 +10,7 @@ dependencies = [
     "django-environ>=0.12",
     "drf-spectacular>=0.28",
     "psycopg[binary]>=3.2,<4",
+    "django-tasks-db>=0.13.0",
 ]
 
 [dependency-groups]

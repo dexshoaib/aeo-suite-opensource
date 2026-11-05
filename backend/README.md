@@ -122,3 +122,17 @@ Lists the workspaces of one organization without a request object —
 the same scoping helper that request-less contexts (background jobs,
 commands) use. Unknown and malformed ids answer the same error and
 never reveal whether an organization exists.
+
+## 8. Background tasks (worker)
+
+Background tasks run asynchronously using the database-backed queue. In a second terminal (with the same environment variables as the web server):
+
+    cd backend
+    uv run python manage.py db_worker --no-reload
+
+- Stop with `Ctrl+C`: the worker handles graceful shutdown and completes any in-flight task before exiting.
+- Pass `--no-reload` explicitly: the worker's `--reload` flag defaults to `settings.DEBUG`, so `--no-reload` prevents unnecessary reload processes outside local development.
+- Automated tests and queue-draining scripts process all outstanding tasks and exit immediately using the batch flag:
+
+    uv run python manage.py db_worker --batch --no-startup-delay
+
