@@ -2,6 +2,7 @@
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Workspace
 from apps.sites.models import Site
@@ -179,4 +180,45 @@ def test_filter_sites_by_malformed_workspace_yields_empty(
     )
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+def test_create_site_rejects_embedded_credentials(authed_client_a, org_a, workspace_a):
+    """A domain carrying userinfo is rejected (SPEC-1.2 amendment 2)."""
+    url = reverse("sites-list")
+    resp = authed_client_a.post(
+        url,
+        data={
+            "workspace": str(workspace_a.pk),
+            "name": "Creds Site",
+            "domain": "user@evil.com",
+        },
+        format="json",
+        HTTP_X_ORGANIZATION_ID=str(org_a.pk),
+    )
+    assert resp.status_code == 400
+
+
+def test_domain_edit_resets_verification(authed_client_a, org_a, site_a):
+    """Editing the domain: new token, status pending, timestamps cleared."""
+    site_a.verification_status = Site.VerificationStatus.VERIFIED
+    site_a.verified_at = timezone.now()
+    site_a.verification_checked_at = timezone.now()
+    site_a.save()
+    old_token = site_a.verification_token
+
+    url = reverse("sites-detail", args=[site_a.pk])
+    resp = authed_client_a.patch(
+        url,
+        data={"domain": "moved.example.com"},
+        format="json",
+        HTTP_X_ORGANIZATION_ID=str(org_a.pk),
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["verification_status"] == "pending"
+    assert data["verification_token"]
+    assert data["verification_token"] != old_token
+    assert data["verified_at"] is None
+    assert data["verification_checked_at"] is None
+
 

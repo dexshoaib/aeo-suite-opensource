@@ -99,6 +99,12 @@ REST_FRAMEWORK = {
     # drf-spectacular's AutoSchema drives all schema generation; DRF's
     # built-in default is incompatible with it.
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Per-org rates for opt-in throttles (SPEC-1.2: site verification).
+    # LocMemCache until the queue/Redis chunk; per-process is fine at
+    # current scale and degrades to under-counting, never over-blocking.
+    "DEFAULT_THROTTLE_RATES": {
+        "site_verify": "30/hour",
+    },
 }
 
 # Strict schema serving: warnings fail the build because the frontend's
