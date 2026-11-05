@@ -140,6 +140,23 @@ export interface paths {
         patch: operations["v1_sites_partial_update"];
         trace?: never;
     };
+    "/api/v1/sites/{id}/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run ownership verification; 200 even when the check fails. */
+        post: operations["v1_sites_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/": {
         parameters: {
             query?: never;
@@ -238,7 +255,13 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
         };
-        /** @description Serialize a site; organization is bound server-side from resolved context. */
+        /**
+         * @description Serialize a site; organization is bound server-side from resolved context.
+         *
+         *     verification_token is exposed only to editor-level roles and above
+         *     (SPEC-1.2 amendment 2); other members receive an empty string so the
+         *     generated client schema stays stable.
+         */
         PatchedSite: {
             /** Format: uuid */
             readonly id?: string;
@@ -250,6 +273,11 @@ export interface components {
             domain?: string;
             readonly verification_status?: components["schemas"]["VerificationStatusEnum"];
             readonly verification_token?: string;
+            /** Format: date-time */
+            readonly verified_at?: string | null;
+            /** Format: date-time */
+            readonly verification_checked_at?: string | null;
+            readonly verification_error?: string;
             /** Format: date-time */
             readonly created_at?: string;
             /** Format: date-time */
@@ -267,7 +295,13 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
         };
-        /** @description Serialize a site; organization is bound server-side from resolved context. */
+        /**
+         * @description Serialize a site; organization is bound server-side from resolved context.
+         *
+         *     verification_token is exposed only to editor-level roles and above
+         *     (SPEC-1.2 amendment 2); other members receive an empty string so the
+         *     generated client schema stays stable.
+         */
         Site: {
             /** Format: uuid */
             readonly id: string;
@@ -279,6 +313,11 @@ export interface components {
             domain: string;
             readonly verification_status: components["schemas"]["VerificationStatusEnum"];
             readonly verification_token: string;
+            /** Format: date-time */
+            readonly verified_at: string | null;
+            /** Format: date-time */
+            readonly verification_checked_at: string | null;
+            readonly verification_error: string;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -612,6 +651,28 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["PatchedSite"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"];
+                };
+            };
+        };
+    };
+    v1_sites_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this site. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

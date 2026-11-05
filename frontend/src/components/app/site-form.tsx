@@ -95,6 +95,9 @@ export function SiteForm({
           readonly organization: string;
           readonly verification_status: "pending" | "verified" | "failed";
           readonly verification_token: string;
+          readonly verified_at: string | null;
+          readonly verification_checked_at: string | null;
+          readonly verification_error: string;
           readonly created_at: string;
           readonly updated_at: string;
         },

@@ -13,7 +13,15 @@ import {
   CheckCircle2Icon,
   ClockIcon,
   ExternalLinkIcon,
+  ShieldCheckIcon,
+  CopyIcon,
+  ChevronDownIcon,
 } from "lucide-react";
+import {
+  buildMetaSnippet,
+  buildWellKnownUrl,
+  describeVerificationError,
+} from "@/lib/verification";
 
 export interface SiteItem {
   id: string;
@@ -23,6 +31,9 @@ export interface SiteItem {
   organization: string;
   verification_status: "pending" | "verified" | "failed";
   verification_token: string;
+  verified_at?: string | null;
+  verification_checked_at?: string | null;
+  verification_error?: string;
   created_at?: string;
 }
 
@@ -47,6 +58,8 @@ export function SiteList({
   const [selectedWorkspaceFilter, setSelectedWorkspaceFilter] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [tokenPanelId, setTokenPanelId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -136,6 +149,36 @@ export function SiteList({
     }
   };
 
+  const handleVerify = async (siteId: string) => {
+    if (!selectedOrgId) return;
+    setVerifyingId(siteId);
+    setError(null);
+
+    try {
+      const { data, response } = await client.POST("/api/v1/sites/{id}/verify/", {
+        headers: {
+          "X-Organization-ID": selectedOrgId,
+        },
+        params: {
+          path: { id: siteId },
+        },
+      });
+
+      if (response.ok && data) {
+        const updated = data as unknown as SiteItem;
+        setSites((prev) => prev.map((s) => (s.id === siteId ? updated : s)));
+      } else if (response.status === 429) {
+        setError("Too many verification attempts. Please try again later.");
+      } else {
+        setError("Failed to run verification.");
+      }
+    } catch {
+      setError("An unexpected error occurred while verifying the site.");
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
   const getWorkspaceName = (wsId: string) => {
     return workspaces.find((w) => w.id === wsId)?.name ?? "Unknown Workspace";
   };
@@ -215,65 +258,151 @@ export function SiteList({
         ) : (
           <div className="divide-y divide-neutral-100">
             {visibleSites.map((site) => (
-              <div
-                key={site.id}
-                className="flex items-center justify-between py-3.5 text-xs"
-              >
-                <div className="flex items-start gap-3">
-                  <GlobeIcon className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-neutral-900">
-                        {site.name}
-                      </span>
-                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-2xs font-medium text-neutral-600">
-                        {getWorkspaceName(site.workspace)}
-                      </span>
+              <div key={site.id}>
+                <div className="flex items-center justify-between py-3.5 text-xs">
+                  <div className="flex items-start gap-3">
+                    <GlobeIcon className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-neutral-900">
+                          {site.name}
+                        </span>
+                        <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-2xs font-medium text-neutral-600">
+                          {getWorkspaceName(site.workspace)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-neutral-500">
+                        <a
+                          href={`https://${site.domain}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="inline-flex items-center gap-1 hover:text-neutral-900 hover:underline"
+                        >
+                          {site.domain}
+                          <ExternalLinkIcon className="h-3 w-3" />
+                        </a>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-neutral-500">
-                      <a
-                        href={`https://${site.domain}`}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="inline-flex items-center gap-1 hover:text-neutral-900 hover:underline"
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {site.verification_status === "verified" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-2xs font-medium text-emerald-700">
+                        <CheckCircle2Icon className="h-3 w-3" />
+                        Verified
+                      </span>
+                    ) : site.verification_status === "failed" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-2xs font-medium text-rose-700">
+                        <AlertCircleIcon className="h-3 w-3" />
+                        Failed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-2xs font-medium text-amber-700">
+                        <ClockIcon className="h-3 w-3" />
+                        Pending Verification
+                      </span>
+                    )}
+
+                    {site.verification_status === "failed" && site.verification_error && (
+                      <span
+                        className="max-w-48 truncate text-2xs text-rose-600"
+                        title={describeVerificationError(site.verification_error)}
                       >
-                        {site.domain}
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                    </div>
+                        {describeVerificationError(site.verification_error)}
+                      </span>
+                    )}
+
+                    {site.verification_token && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleVerify(site.id)}
+                        disabled={verifyingId === site.id}
+                        className="h-7 px-2 text-2xs cursor-pointer"
+                      >
+                        <ShieldCheckIcon className="mr-1 h-3 w-3" />
+                        {verifyingId === site.id ? "Verifying..." : "Verify now"}
+                      </Button>
+                    )}
+
+                    {site.verification_token && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setTokenPanelId((cur) => (cur === site.id ? null : site.id))
+                        }
+                        className="h-7 w-7 p-0 text-neutral-400 hover:text-neutral-900 cursor-pointer"
+                        aria-label={`Toggle verification instructions for ${site.name}`}
+                      >
+                        <ChevronDownIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(site.id)}
+                      disabled={deletingId === site.id}
+                      className="h-7 w-7 p-0 text-neutral-400 hover:text-red-600 cursor-pointer"
+                      aria-label={`Delete ${site.name}`}
+                    >
+                      <Trash2Icon className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {/* Verification Status Badge */}
-                  {site.verification_status === "verified" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-2xs font-medium text-emerald-700">
-                      <CheckCircle2Icon className="h-3 w-3" />
-                      Verified
-                    </span>
-                  ) : site.verification_status === "failed" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-2xs font-medium text-rose-700">
-                      <AlertCircleIcon className="h-3 w-3" />
-                      Failed
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-2xs font-medium text-amber-700">
-                      <ClockIcon className="h-3 w-3" />
-                      Pending Verification
-                    </span>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(site.id)}
-                    disabled={deletingId === site.id}
-                    className="h-7 w-7 p-0 text-neutral-400 hover:text-red-600 cursor-pointer"
-                    aria-label={`Delete ${site.name}`}
-                  >
-                    <Trash2Icon className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                {tokenPanelId === site.id && site.verification_token && (
+                  <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-2xs text-neutral-600">
+                    <p className="font-medium text-neutral-700">
+                      Prove ownership of {site.domain} with either method, then
+                      click Verify now.
+                    </p>
+                    <div className="space-y-1">
+                      <p className="font-medium">Method 1 — meta tag in the homepage head:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 overflow-x-auto rounded bg-white px-2 py-1 font-mono">
+                          {buildMetaSnippet(site.verification_token)}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-2 text-2xs cursor-pointer"
+                          onClick={() =>
+                            navigator.clipboard?.writeText(
+                              buildMetaSnippet(site.verification_token)
+                            )
+                          }
+                        >
+                          <CopyIcon className="mr-1 h-3 w-3" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium">Method 2 — host this file:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 overflow-x-auto rounded bg-white px-2 py-1 font-mono">
+                          {buildWellKnownUrl(site.domain)}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-2 text-2xs cursor-pointer"
+                          onClick={() =>
+                            navigator.clipboard?.writeText(site.verification_token)
+                          }
+                        >
+                          <CopyIcon className="mr-1 h-3 w-3" />
+                          Copy token
+                        </Button>
+                      </div>
+                      <p>
+                        The file body must contain exactly the token above.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
