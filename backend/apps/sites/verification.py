@@ -21,6 +21,7 @@ import socket
 import ssl
 import time
 import urllib.parse
+from dataclasses import dataclass
 from html.parser import HTMLParser
 
 from django.utils import timezone
@@ -233,24 +234,42 @@ def _run_checks(domain: str, token: str, deadline: float) -> tuple[bool, str]:
     return False, outcomes[0][1]
 
 
-def verify_site(site: Site) -> Site:
-    """Run the challenges and write the outcome (amendment 3 semantics)."""
+@dataclass(frozen=True)
+class VerificationOutcome:
+    success: bool
+    error_code: str
+    is_transient: bool
+
+
+def evaluate_site_verification(site: Site) -> VerificationOutcome:
+    """Evaluate domain ownership challenges without persisting changes."""
     deadline = time.monotonic() + OVERALL_DEADLINE_SECONDS
     success, code = _run_checks(site.domain, site.verification_token, deadline)
+    is_transient = (not success) and (code in (CODE_TIMEOUT, CODE_NETWORK))
+    return VerificationOutcome(
+        success=success,
+        error_code=code,
+        is_transient=is_transient,
+    )
+
+
+def verify_site(site: Site) -> Site:
+    """Run the challenges and write the outcome (amendment 3 semantics)."""
+    outcome = evaluate_site_verification(site)
 
     site.verification_checked_at = timezone.now()
-    if success:
+    if outcome.success:
         site.verification_status = Site.VerificationStatus.VERIFIED
         site.verified_at = timezone.now()
         site.verification_error = ""
-    elif code in (CODE_TIMEOUT, CODE_NETWORK):
+    elif outcome.is_transient:
         # Transient: no evidence, so status and verified_at stay as they are.
-        site.verification_error = code
+        site.verification_error = outcome.error_code
     else:
         # Definitive failure (no_token/mismatch/blocked/too_large).
         site.verification_status = Site.VerificationStatus.FAILED
         site.verified_at = None
-        site.verification_error = code
+        site.verification_error = outcome.error_code
     site.save(
         update_fields=[
             "verification_status",
@@ -261,7 +280,7 @@ def verify_site(site: Site) -> Site:
         ]
     )
 
-    if success:
+    if outcome.success:
         with scope_to_organization(None):
             duplicates = (
                 Site.objects.filter(

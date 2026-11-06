@@ -83,3 +83,75 @@ class TaskDatabaseBackendIntegrationTest(TransactionTestCase):
             TASK_REGISTRY[:] = initial_registry
             globals()["raw_db_worker_probe"] = raw_db_worker_probe
             _db_worker_probe_runs.clear()
+
+    def test_database_worker_processes_reverify_site_to_completion(self):
+        """Enqueue reverify_site into the database queue and process it via db_worker."""
+        import datetime
+        from unittest import mock
+
+        from django.utils import timezone
+
+        from apps.accounts.models import Workspace
+        from apps.sites.models import Site
+        from apps.sites.reverification import RESULT_REVERIFIED, reverify_site
+        from apps.sites.verification import VerificationOutcome
+
+        db_task_result_model: Any = apps.get_model("django_tasks_database", "DBTaskResult")
+
+        object.__setattr__(reverify_site, "backend", "database")
+        try:
+            with transaction.atomic():
+                org = Organization.objects.create(name="DB Reverification Org")
+                workspace = Workspace.objects.create(organization=org, name="Workspace R")
+                site = Site.objects.create(
+                    organization=org,
+                    workspace=workspace,
+                    domain="db-worker-reverify.com",
+                    verification_status=Site.VerificationStatus.VERIFIED,
+                    verified_at=timezone.now() - datetime.timedelta(days=10),
+                    verification_checked_at=timezone.now() - datetime.timedelta(days=10),
+                    verification_token="test-db-token",
+                )
+                success_outcome = VerificationOutcome(
+                    success=True, error_code="", is_transient=False
+                )
+                with mock.patch(
+                    "apps.sites.reverification.evaluate_site_verification",
+                    return_value=success_outcome,
+                ):
+                    reverify_site.enqueue(str(site.id), organization=org)
+
+            # Confirm task row was written to PostgreSQL queue
+            matching_results = db_task_result_model.objects.filter(backend_name="database")
+            assert matching_results.exists()
+
+            # Drain queue using db_worker --batch with mocked fetch seam
+            with mock.patch(
+                "apps.sites.reverification.evaluate_site_verification",
+                return_value=success_outcome,
+            ):
+                call_command(
+                    "db_worker",
+                    "--batch",
+                    "--no-startup-delay",
+                    "--backend",
+                    "database",
+                )
+
+            # Verify site outcome was persisted to PostgreSQL
+            site.refresh_from_db()
+            assert site.verification_status == Site.VerificationStatus.VERIFIED
+            assert site.verification_error == ""
+            assert site.verification_checked_at is not None
+
+            # Verify the result row status is SUCCESSFUL and return_value is reverified
+            latest_result = (
+                db_task_result_model.objects.filter(backend_name="database")
+                .order_by("-enqueued_at")
+                .first()
+            )
+            assert latest_result is not None
+            assert latest_result.status == "SUCCESSFUL"
+            assert latest_result.return_value == RESULT_REVERIFIED
+        finally:
+            object.__setattr__(reverify_site, "backend", "default")

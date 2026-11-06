@@ -11,7 +11,9 @@ from typing import Any
 from apps.core.tasks import TASK_REGISTRY
 
 # Map from task name -> sample JSON-primitive arguments list
-TASK_ISOLATION_CASES: dict[str, list[Any]] = {}
+TASK_ISOLATION_CASES: dict[str, list[Any]] = {
+    "reverify_site": ["00000000-0000-0000-0000-000000000000"],
+}
 
 
 def check_task_isolation_registry() -> None:

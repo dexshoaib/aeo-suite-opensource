@@ -6,3 +6,9 @@ class SitesConfig(AppConfig):
     name = "apps.sites"
     label = "client_sites"
     verbose_name = "Sites"
+
+    def ready(self) -> None:
+        from apps.sites import (
+            checks,  # noqa: F401
+            reverification,  # noqa: F401
+        )

@@ -123,6 +123,38 @@ the same scoping helper that request-less contexts (background jobs,
 commands) use. Unknown and malformed ids answer the same error and
 never reveal whether an organization exists.
 
+### Stale verification sweep
+
+    uv run python manage.py sweep_stale_verifications [--dry-run] [--limit N]
+
+Finds sites whose verification status has become stale (based on
+`SITE_REVERIFICATION_INTERVAL_DAYS`) and enqueues background
+re-verification tasks. Subject to `SITE_REVERIFICATION_PER_ORG_LIMIT` and
+`SITE_REVERIFICATION_MAX_PER_SWEEP` settings limits.
+
+The command acquires a PostgreSQL advisory lock (`745201441`) for the duration of
+the sweep run; overlapping invocations exit cleanly with code 0 (`lock=busy`).
+
+Requires the background worker (`db_worker`) to be running to drain enqueued
+re-verification tasks (see Section 8).
+
+#### Windows Scheduled Task (`schtasks`)
+
+To run the sweep on a recurring daily schedule (e.g. at 03:00 AM) using Windows Task
+Scheduler, create a task with matching environment variables:
+
+    schtasks /create /tn "AEO-Suite\SweepStaleVerifications" /tr "cmd /c D:\path\to\venv\Scripts\python.exe D:\path\to\backend\manage.py sweep_stale_verifications >> D:\path\to\logs\sweep.log 2>&1" /sc daily /st 03:00
+
+Notes:
+- Ensure the task runs with identical environment variables (`DATABASE_URL`,
+  `DJANGO_SECRET_KEY`, etc.) as the web application and worker.
+- Set the Task Scheduler setting "If the task is already running, then the
+  following rule applies" to **"Do not start a new instance"** (`IgnoreNew`).
+- Overlap prevention is doubly guaranteed by the PostgreSQL session-level advisory
+  lock (`lock=busy` exit 0).
+- The worker process (`manage.py db_worker`) must be running continuously to drain
+  the tasks enqueued by the sweep.
+
 ## 8. Background tasks (worker)
 
 Background tasks run asynchronously using the database-backed queue. In a second terminal (with the same environment variables as the web server):

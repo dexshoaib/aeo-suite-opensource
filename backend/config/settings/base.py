@@ -165,6 +165,11 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Site ownership re-verification settings
+SITE_REVERIFICATION_INTERVAL_DAYS = 7
+SITE_REVERIFICATION_PER_ORG_LIMIT = 50
+SITE_REVERIFICATION_MAX_PER_SWEEP = 500
+
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_db.DatabaseBackend",
