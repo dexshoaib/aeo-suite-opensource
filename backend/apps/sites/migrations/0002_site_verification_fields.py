@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('client_sites', '0001_initial'),
+        ("client_sites", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='site',
-            name='verification_checked_at',
+            model_name="site",
+            name="verification_checked_at",
             field=models.DateTimeField(blank=True, editable=False, null=True),
         ),
         migrations.AddField(
-            model_name='site',
-            name='verification_error',
-            field=models.CharField(blank=True, default='', editable=False, max_length=32),
+            model_name="site",
+            name="verification_error",
+            field=models.CharField(blank=True, default="", editable=False, max_length=32),
         ),
         migrations.AddField(
-            model_name='site',
-            name='verified_at',
+            model_name="site",
+            name="verified_at",
             field=models.DateTimeField(blank=True, editable=False, null=True),
         ),
     ]

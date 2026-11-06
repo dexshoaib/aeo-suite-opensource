@@ -32,7 +32,5 @@ def user_has_org_role(user, organization, minimum: str = EDITOR) -> bool:
         return False
     from apps.accounts.models import Membership
 
-    membership = Membership.objects.filter(
-        user=user, organization=organization
-    ).first()
+    membership = Membership.objects.filter(user=user, organization=organization).first()
     return membership is not None and role_at_least(membership.role, minimum)

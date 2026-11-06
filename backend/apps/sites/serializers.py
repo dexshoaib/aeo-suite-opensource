@@ -68,9 +68,7 @@ class SiteSerializer(serializers.ModelSerializer):
                 "Workspace does not belong to the selected organization."
             )
         if self.instance is not None and self.instance.workspace_id != value.id:
-            raise serializers.ValidationError(
-                "Moving a site between workspaces is not supported."
-            )
+            raise serializers.ValidationError("Moving a site between workspaces is not supported.")
         return value
 
     def validate_domain(self, value: str) -> str:
@@ -85,16 +83,12 @@ class SiteSerializer(serializers.ModelSerializer):
         domain = domain.split(":")[0].strip()
         if not domain or "." not in domain or "@" in domain:
             # "@" rejects embedded credentials (SPEC-1.2 amendment 2).
-            raise serializers.ValidationError(
-                "Enter a valid domain name (e.g. example.com)."
-            )
+            raise serializers.ValidationError("Enter a valid domain name (e.g. example.com).")
         return domain
 
     def update(self, instance: Site, validated_data: dict) -> Site:
         """Reset verification when the domain changes (SPEC-1.2 amendment 2)."""
-        domain_changed = (
-            "domain" in validated_data and validated_data["domain"] != instance.domain
-        )
+        domain_changed = "domain" in validated_data and validated_data["domain"] != instance.domain
         instance = super().update(instance, validated_data)
         if domain_changed:
             instance.verification_status = Site.VerificationStatus.PENDING

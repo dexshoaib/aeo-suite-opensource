@@ -63,9 +63,7 @@ def test_verify_success_via_meta_tag(authed_client_a, org_a, workspace_a, site_a
         "apps.sites.verification._fetch",
         side_effect=[_ok(_html_with_meta(TOKEN)), _ok(b"other")],
     ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 200
     data = resp.json()
     assert data["verification_status"] == "verified"
@@ -81,9 +79,7 @@ def test_verify_success_via_well_known_file(authed_client_a, org_a, site_a):
         "apps.sites.verification._fetch",
         side_effect=[(404, b"", {}, False), (200, f"  {TOKEN}\n".encode(), {}, False)],
     ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 200
     assert resp.json()["verification_status"] == "verified"
 
@@ -97,9 +93,7 @@ def test_verify_definitive_failure_clears_verified_at(authed_client_a, org_a, si
         "apps.sites.verification._fetch",
         side_effect=[_ok(_html_with_meta("wrong")), (200, b"wrong", {}, False)],
     ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 200
     data = resp.json()
     assert data["verification_status"] == "failed"
@@ -116,9 +110,7 @@ def test_verify_timeout_leaves_verified_at_unchanged(authed_client_a, org_a, sit
         "apps.sites.verification._fetch",
         side_effect=VerificationNetworkError("timeout"),
     ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 200
     data = resp.json()
     assert data["verification_status"] == "verified"
@@ -128,9 +120,7 @@ def test_verify_timeout_leaves_verified_at_unchanged(authed_client_a, org_a, sit
 
 
 def test_verify_foreign_org_is_404(authed_client_b, org_b, site_a):
-    resp = authed_client_b.post(
-        verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_b.pk)
-    )
+    resp = authed_client_b.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_b.pk))
     assert resp.status_code == 404
 
 
@@ -145,9 +135,9 @@ def test_verify_unauthenticated_is_401(api_client, site_a):
 def test_role_ladder_gate():
     from apps.accounts.roles import role_at_least
 
-    assert role_at_least("member") is True      # maps to editor today
+    assert role_at_least("member") is True  # maps to editor today
     assert role_at_least("owner") is True
-    assert role_at_least("viewer") is False     # future role: denied
+    assert role_at_least("viewer") is False  # future role: denied
     assert role_at_least("editor") is True
     assert role_at_least("unknown-role") is False  # fails closed
 
@@ -175,6 +165,7 @@ def test_validate_rejects_ipv4_mapped_ipv6(monkeypatch):
 
 def test_validate_rejects_mixed_resolution(monkeypatch):
     """One public AND one private answer: the whole target is blocked."""
+
     def fake_getaddrinfo(host, port, type=None):
         return [
             (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
@@ -220,13 +211,15 @@ def test_redirect_to_private_ip_is_blocked(monkeypatch):
     monkeypatch.setattr(
         "apps.sites.verification._request_via",
         lambda ip, parts, timeout: (
-            302,
-            b"",
-            {"Location": "https://private.example.com/steal"},
-            False,
-        )
-        if ip == "93.184.216.34"
-        else (200, b"", {}, False),
+            (
+                302,
+                b"",
+                {"Location": "https://private.example.com/steal"},
+                False,
+            )
+            if ip == "93.184.216.34"
+            else (200, b"", {}, False)
+        ),
     )
     import time as _time
 
@@ -263,21 +256,15 @@ def test_verify_network_error_code_surfaced(authed_client_a, org_a, site_a):
         "apps.sites.verification._fetch",
         side_effect=VerificationNetworkError("connection refused"),
     ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 200
     assert resp.json()["verification_error"] == CODE_NETWORK
     assert resp.json()["verification_status"] == "pending"
 
 
 def test_verify_blocked_reports_code(authed_client_a, org_a, site_a):
-    with mock.patch(
-        "apps.sites.verification._fetch", side_effect=VerificationBlocked("no")
-    ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+    with mock.patch("apps.sites.verification._fetch", side_effect=VerificationBlocked("no")):
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert resp.status_code == 200
     data = resp.json()
     assert data["verification_error"] == CODE_BLOCKED
@@ -292,9 +279,7 @@ def test_well_known_body_over_cap_is_definitive(authed_client_a, org_a, site_a):
         "apps.sites.verification._fetch",
         side_effect=[(404, b"", {}, False), (200, big, {}, True)],
     ):
-        resp = authed_client_a.post(
-            verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-        )
+        resp = authed_client_a.post(verify_url(site_a), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     data = resp.json()
     assert data["verification_status"] == "failed"
     assert data["verification_error"] == CODE_NO_TOKEN

@@ -47,9 +47,7 @@ def test_login_flow_reaches_a_tenant_endpoint(api_client, user_a, org_a):
     )
     assert response.status_code == 200
 
-    listed = api_client.get(
-        reverse("organizations-list"), HTTP_X_ORGANIZATION_ID=str(org_a.pk)
-    )
+    listed = api_client.get(reverse("organizations-list"), HTTP_X_ORGANIZATION_ID=str(org_a.pk))
     assert listed.status_code == 200
     assert [row["name"] for row in listed.json()] == [org_a.name]
 

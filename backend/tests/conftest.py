@@ -33,18 +33,14 @@ def user_b(db):
 @pytest.fixture
 def org_a(user_a):
     organization = Organization.objects.create(name="Org A")
-    Membership.objects.create(
-        organization=organization, user=user_a, role=Membership.Role.OWNER
-    )
+    Membership.objects.create(organization=organization, user=user_a, role=Membership.Role.OWNER)
     return organization
 
 
 @pytest.fixture
 def org_b(user_b):
     organization = Organization.objects.create(name="Org B")
-    Membership.objects.create(
-        organization=organization, user=user_b, role=Membership.Role.OWNER
-    )
+    Membership.objects.create(organization=organization, user=user_b, role=Membership.Role.OWNER)
     return organization
 
 

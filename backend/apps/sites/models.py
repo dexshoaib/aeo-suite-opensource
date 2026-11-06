@@ -62,12 +62,8 @@ class Site(TimeStampedModel):
     # SPEC-1.2: verified_at is cleared only on a definitive failure;
     # timeout/network errors leave it untouched (amendment 3).
     verified_at = models.DateTimeField(null=True, blank=True, editable=False)
-    verification_checked_at = models.DateTimeField(
-        null=True, blank=True, editable=False
-    )
-    verification_error = models.CharField(
-        max_length=32, blank=True, default="", editable=False
-    )
+    verification_checked_at = models.DateTimeField(null=True, blank=True, editable=False)
+    verification_error = models.CharField(max_length=32, blank=True, default="", editable=False)
 
     objects = TenantManager()
 

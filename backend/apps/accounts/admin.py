@@ -32,9 +32,7 @@ class OrgScopedAdminMixin:
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
-        return queryset.filter(
-            **{f"{self.organization_lookup}memberships__user": request.user}
-        )
+        return queryset.filter(**{f"{self.organization_lookup}memberships__user": request.user})
 
 
 @admin.register(User)

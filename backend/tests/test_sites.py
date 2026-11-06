@@ -30,9 +30,7 @@ def test_missing_org_header_returns_empty_sites(authed_client_a, site_a):
     assert resp.json() == []
 
 
-def test_create_site_normalizes_domain_and_binds_org(
-    authed_client_a, org_a, workspace_a
-):
+def test_create_site_normalizes_domain_and_binds_org(authed_client_a, org_a, workspace_a):
     """Creating a site binds the active organization and normalizes the domain."""
     url = reverse("sites-list")
     payload = {
@@ -61,9 +59,7 @@ def test_create_site_normalizes_domain_and_binds_org(
     assert site.domain == "docs.example.com"
 
 
-def test_create_site_cross_org_workspace_rejected(
-    authed_client_a, org_a, workspace_b
-):
+def test_create_site_cross_org_workspace_rejected(authed_client_a, org_a, workspace_b):
     """Submitting a foreign workspace ID returns 400 Bad Request."""
     url = reverse("sites-list")
     payload = {
@@ -81,9 +77,7 @@ def test_create_site_cross_org_workspace_rejected(
     assert "workspace" in resp.json()
 
 
-def test_duplicate_domain_in_same_workspace_rejected(
-    authed_client_a, org_a, workspace_a, site_a
-):
+def test_duplicate_domain_in_same_workspace_rejected(authed_client_a, org_a, workspace_a, site_a):
     """Registering the same domain twice in the same workspace is rejected."""
     url = reverse("sites-list")
     payload = {
@@ -120,9 +114,7 @@ def test_duplicate_domain_in_different_workspace_allowed(
     assert resp.status_code == 201
 
 
-def test_patch_site_cannot_reassign_workspace(
-    authed_client_a, org_a, workspace_a, site_a
-):
+def test_patch_site_cannot_reassign_workspace(authed_client_a, org_a, workspace_a, site_a):
     """Attempting to alter workspace on PATCH is rejected (workspace immutability)."""
     workspace_a2 = Workspace.objects.create(organization=org_a, name="Workspace A2")
     url = reverse("sites-detail", args=[site_a.pk])
@@ -220,5 +212,3 @@ def test_domain_edit_resets_verification(authed_client_a, org_a, site_a):
     assert data["verification_token"] != old_token
     assert data["verified_at"] is None
     assert data["verification_checked_at"] is None
-
-

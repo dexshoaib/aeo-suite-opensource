@@ -50,9 +50,7 @@ def _routed_viewset_classes() -> set:
                 callback = pattern.callback
                 # DRF viewsets expose the class via ``cls``, plain DRF
                 # views via Django's ``view_class``.
-                view_class = getattr(callback, "cls", None) or getattr(
-                    callback, "view_class", None
-                )
+                view_class = getattr(callback, "cls", None) or getattr(callback, "view_class", None)
                 if view_class is not None:
                     classes.add(view_class)
 
@@ -107,17 +105,13 @@ def test_foreign_org_rows_hidden_on_every_method(
     # Foreign detail object behind a legitimate selector: 404 on every
     # method that could read or change it.
     for method in ("get", "patch", "delete"):
-        response = getattr(authed_client_a, method)(
-            foreign_detail_url, format="json", **own_header
-        )
+        response = getattr(authed_client_a, method)(foreign_detail_url, format="json", **own_header)
         assert response.status_code == 404, f"{viewset_name}.{method} leaked a foreign row"
 
 
 def _grant_accounts_permissions(user):
     user.user_permissions.add(
-        *Permission.objects.filter(
-            content_type__app_label__in=["accounts", "client_sites"]
-        )
+        *Permission.objects.filter(content_type__app_label__in=["accounts", "client_sites"])
     )
 
 
@@ -156,14 +150,10 @@ def test_admin_hides_foreign_org_rows(
     )
     assert foreign_workspace.status_code == 302
     assert foreign_workspace.url == reverse("admin:index")
-    foreign_org = client.get(
-        reverse("admin:accounts_organization_change", args=[org_b.pk])
-    )
+    foreign_org = client.get(reverse("admin:accounts_organization_change", args=[org_b.pk]))
     assert foreign_org.status_code == 302
     assert foreign_org.url == reverse("admin:index")
-    foreign_site = client.get(
-        reverse("admin:client_sites_site_change", args=[site_b.pk])
-    )
+    foreign_site = client.get(reverse("admin:client_sites_site_change", args=[site_b.pk]))
     assert foreign_site.status_code == 302
     assert foreign_site.url == reverse("admin:index")
 

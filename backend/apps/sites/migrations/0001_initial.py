@@ -7,31 +7,72 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Site',
+            name="Site",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=255)),
-                ('domain', models.CharField(max_length=255)),
-                ('verification_status', models.CharField(choices=[('pending', 'Pending Verification'), ('verified', 'Verified'), ('failed', 'Failed')], default='pending', max_length=20)),
-                ('verification_token', models.CharField(default=apps.sites.models.generate_verification_token, editable=False, max_length=64, unique=True)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sites', to='accounts.organization')),
-                ('workspace', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sites', to='accounts.workspace')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(max_length=255)),
+                ("domain", models.CharField(max_length=255)),
+                (
+                    "verification_status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending Verification"),
+                            ("verified", "Verified"),
+                            ("failed", "Failed"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "verification_token",
+                    models.CharField(
+                        default=apps.sites.models.generate_verification_token,
+                        editable=False,
+                        max_length=64,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sites",
+                        to="accounts.organization",
+                    ),
+                ),
+                (
+                    "workspace",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sites",
+                        to="accounts.workspace",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'sites_site',
-                'ordering': ['name'],
-                'constraints': [models.UniqueConstraint(fields=('workspace', 'domain'), name='unique_workspace_domain')],
+                "db_table": "sites_site",
+                "ordering": ["name"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("workspace", "domain"), name="unique_workspace_domain"
+                    )
+                ],
             },
         ),
     ]
