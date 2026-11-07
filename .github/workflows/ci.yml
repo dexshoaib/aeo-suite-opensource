@@ -119,16 +119,25 @@ jobs:
           git diff --exit-code -- src/lib/api/schema.d.ts
 
   crawler:
-    name: crawler - guarded placeholder
+    name: crawler - fmt, clippy, cargo test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: crawler
     steps:
       - uses: actions/checkout@v4
-      - name: Guarded placeholder
-        run: |
-          if [ -f crawler/Cargo.toml ]; then
-            echo "::error::crawler/ contains real code but the cargo stage is not wired yet."
-            echo "::error::Wire cargo fmt --check + clippy -D warnings + cargo check before merging."
-            exit 1
-          fi
-          echo "crawler/ has only placeholders - cargo checks land with the crawler service"
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Cache cargo registry, index and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crawler -> target
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy check (-D warnings)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Cargo test
+        run: cargo test --all-targets

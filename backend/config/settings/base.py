@@ -170,6 +170,10 @@ SITE_REVERIFICATION_INTERVAL_DAYS = 7
 SITE_REVERIFICATION_PER_ORG_LIMIT = 50
 SITE_REVERIFICATION_MAX_PER_SWEEP = 500
 
+# Crawler preflight configuration
+CRAWLER_PREFLIGHT_KEY_ID = "v1"
+CRAWLER_USER_AGENT = "AEOSuiteBot/1.0 (+https://app.example-aeo.com/bot)"
+
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_db.DatabaseBackend",

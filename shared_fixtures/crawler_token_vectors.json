@@ -1,0 +1,36 @@
+{
+  "secret_key": "test-secret-key-for-crawler-preflight-verification-only-12345",
+  "derived_key_hex": "7b476c7a53af071bcd2b293116d507889c07d51b3202e39d6c83a655f2b6c91d",
+  "salt": "aeo-crawler-preflight-token-v1",
+  "test_clock_now": 1731002000,
+  "valid": {
+    "payload": {
+      "v": 1,
+      "kid": "v1",
+      "sub": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "org": "7ca24e62-4318-4e1b-b27a-5b1e60058b88",
+      "dom": "example.com",
+      "iat": 1731000000,
+      "exp": 1731003600
+    },
+    "token": "eyJkb20iOiJleGFtcGxlLmNvbSIsImV4cCI6MTczMTAwMzYwMCwiaWF0IjoxNzMxMDAwMDAwLCJraWQiOiJ2MSIsIm9yZyI6IjdjYTI0ZTYyLTQzMTgtNGUxYi1iMjdhLTViMWU2MDA1OGI4OCIsInN1YiI6IjNmYTg1ZjY0LTU3MTctNDU2Mi1iM2ZjLTJjOTYzZjY2YWZhNiIsInYiOjF9.MMBH04OC0zJUbF-zZIH94HkxHVigQYZdfpE4J0sLYsU"
+  },
+  "expired": {
+    "payload": {
+      "v": 1,
+      "kid": "v1",
+      "sub": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "org": "7ca24e62-4318-4e1b-b27a-5b1e60058b88",
+      "dom": "example.com",
+      "iat": 1731000000,
+      "exp": 1731001000
+    },
+    "token": "eyJkb20iOiJleGFtcGxlLmNvbSIsImV4cCI6MTczMTAwMTAwMCwiaWF0IjoxNzMxMDAwMDAwLCJraWQiOiJ2MSIsIm9yZyI6IjdjYTI0ZTYyLTQzMTgtNGUxYi1iMjdhLTViMWU2MDA1OGI4OCIsInN1YiI6IjNmYTg1ZjY0LTU3MTctNDU2Mi1iM2ZjLTJjOTYzZjY2YWZhNiIsInYiOjF9.45wTvWSDz5Cq6c6fN_22Pc4NthNfSn2ZWJQl8GNi-XI"
+  },
+  "tampered_signature": {
+    "token": "eyJkb20iOiJleGFtcGxlLmNvbSIsImV4cCI6MTczMTAwMzYwMCwiaWF0IjoxNzMxMDAwMDAwLCJraWQiOiJ2MSIsIm9yZyI6IjdjYTI0ZTYyLTQzMTgtNGUxYi1iMjdhLTViMWU2MDA1OGI4OCIsInN1YiI6IjNmYTg1ZjY0LTU3MTctNDU2Mi1iM2ZjLTJjOTYzZjY2YWZhNiIsInYiOjF9.MMBH04OC0zJUbF-zZIH94HkxHVigQYZdfpE4J0sAAAA"
+  },
+  "tampered_payload": {
+    "token": "eyJkb20iOiJldmlsLmNvbSIsImV4cCI6MTczMTAwMzYwMCwiaWF0IjoxNzMxMDAwMDAwLCJraWQiOiJ2MSIsIm9yZyI6IjdjYTI0ZTYyLTQzMTgtNGUxYi1iMjdhLTViMWU2MDA1OGI4OCIsInN1YiI6IjNmYTg1ZjY0LTU3MTctNDU2Mi1iM2ZjLTJjOTYzZjY2YWZhNiIsInYiOjF9.MMBH04OC0zJUbF-zZIH94HkxHVigQYZdfpE4J0sLYsU"
+  }
+}
