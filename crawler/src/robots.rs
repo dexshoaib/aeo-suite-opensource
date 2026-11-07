@@ -6,6 +6,8 @@ pub enum RobotsError {
     RateLimited,
     #[error("Server returned 5xx server error ({0}) - fail closed per RFC 9309")]
     ServerError(u16),
+    #[error("Server returned 4xx client error ({0}) - fail closed per product ruling")]
+    ClientError(u16),
     #[error("Invalid HTTP status: {0}")]
     HttpStatusError(u16),
 }
@@ -257,19 +259,9 @@ pub fn evaluate_robots_http_response(
             })
         }
         429 => Err(RobotsError::RateLimited),
+        status if (400..500).contains(&status) => Err(RobotsError::ClientError(status)),
         500..=599 => Err(RobotsError::ServerError(status_code)),
-        _ => {
-            // Any other 4xx (client error) treated as allow all per RFC 9309 §2.3.1.2
-            if (400..500).contains(&status_code) {
-                Ok(RobotsEvaluation {
-                    allowed: true,
-                    matching_pattern: None,
-                    crawl_delay_seconds: None,
-                })
-            } else {
-                Err(RobotsError::HttpStatusError(status_code))
-            }
-        }
+        _ => Err(RobotsError::HttpStatusError(status_code)),
     }
 }
 
@@ -394,11 +386,26 @@ Disallow:
         let res429 = evaluate_robots_http_response(429, None, "/", "AEOSuiteBot");
         assert_eq!(res429.unwrap_err(), RobotsError::RateLimited);
 
+        // 401 / 403 returns ClientError (fail closed per product ruling #7)
+        let res401 = evaluate_robots_http_response(401, None, "/", "AEOSuiteBot");
+        assert_eq!(res401.unwrap_err(), RobotsError::ClientError(401));
+
+        let res403 = evaluate_robots_http_response(403, None, "/", "AEOSuiteBot");
+        assert_eq!(res403.unwrap_err(), RobotsError::ClientError(403));
+
         // 500 / 503 returns ServerError (fail closed)
         let res500 = evaluate_robots_http_response(500, None, "/", "AEOSuiteBot");
         assert_eq!(res500.unwrap_err(), RobotsError::ServerError(500));
 
         let res503 = evaluate_robots_http_response(503, None, "/", "AEOSuiteBot");
         assert_eq!(res503.unwrap_err(), RobotsError::ServerError(503));
+    }
+
+    #[test]
+    fn test_other_4xx_fails_closed() {
+        for code in [400, 401, 403, 405, 418, 422, 451] {
+            let res = evaluate_robots_http_response(code, None, "/", "AEOSuiteBot");
+            assert_eq!(res.unwrap_err(), RobotsError::ClientError(code));
+        }
     }
 }

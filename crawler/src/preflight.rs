@@ -197,6 +197,13 @@ pub async fn run_preflight(options: PreflightOptions<'_>) -> PreflightReport {
                         code
                     ),
                 ),
+                RobotsError::ClientError(code) => (
+                    RESULT_DISALLOWED_ROBOTS,
+                    format!(
+                        "robots.txt responded with HTTP {} client error (fail-closed per product ruling)",
+                        code
+                    ),
+                ),
                 RobotsError::HttpStatusError(code) => (
                     RESULT_FETCH_FAILED,
                     format!("robots.txt responded with unexpected HTTP status {}", code),

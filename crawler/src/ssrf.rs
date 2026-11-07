@@ -224,6 +224,7 @@ pub async fn resolve_and_pin_ip(host: &str, port: u16) -> Result<IpAddr, SsrfErr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::Ipv6Addr;
 
     #[test]
     fn test_ip_canonicalization() {
@@ -263,7 +264,9 @@ mod tests {
 
     #[test]
     fn test_exhaustive_cidr_boundaries() {
-        // Amendment A9: verify first, last, -1, +1 for each block
+        let blocked_nets = get_blocked_networks();
+
+        // 1. Exhaustive IPv4 boundary verification
         for (cidr, desc) in BLOCKED_IPV4_RANGES {
             let net = Ipv4Net::from_str(cidr).unwrap();
             let first = net.network();
@@ -272,13 +275,15 @@ mod tests {
             // First and last address must both be blocked
             assert!(
                 validate_ip_safety(&IpAddr::V4(first)).is_err(),
-                "Failed to block first address of {} ({})",
+                "Failed to block first IPv4 address {} of {} ({})",
+                first,
                 cidr,
                 desc
             );
             assert!(
                 validate_ip_safety(&IpAddr::V4(last)).is_err(),
-                "Failed to block last address of {} ({})",
+                "Failed to block last IPv4 address {} of {} ({})",
+                last,
                 cidr,
                 desc
             );
@@ -286,23 +291,95 @@ mod tests {
             // Check boundary -1 (if valid u32)
             let first_u32 = u32::from(first);
             if first_u32 > 0 {
-                let before_ip = Ipv4Addr::from(first_u32 - 1);
-                // If before_ip is not in another blocked block, it should be ok
-                // (e.g. 10.0.0.0 - 1 = 9.255.255.255 which is public routable)
-                if !net.contains(&before_ip) && first_u32 == u32::from(Ipv4Addr::new(10, 0, 0, 0)) {
-                    assert!(validate_ip_safety(&IpAddr::V4(before_ip)).is_ok());
+                let before_ip = IpAddr::V4(Ipv4Addr::from(first_u32 - 1));
+                let in_another_block = blocked_nets.iter().any(|b| b.net.contains(&before_ip));
+                if !in_another_block {
+                    assert!(
+                        validate_ip_safety(&before_ip).is_ok(),
+                        "Expected IPv4 address {} (one step before {}) to be accepted, but was rejected",
+                        before_ip,
+                        cidr
+                    );
                 }
             }
 
             // Check boundary +1
             let last_u32 = u32::from(last);
             if last_u32 < u32::MAX {
-                let after_ip = Ipv4Addr::from(last_u32 + 1);
-                // 10.255.255.255 + 1 = 11.0.0.0 which is public routable
-                if !net.contains(&after_ip)
-                    && last_u32 == u32::from(Ipv4Addr::new(10, 255, 255, 255))
-                {
-                    assert!(validate_ip_safety(&IpAddr::V4(after_ip)).is_ok());
+                let after_ip = IpAddr::V4(Ipv4Addr::from(last_u32 + 1));
+                let in_another_block = blocked_nets.iter().any(|b| b.net.contains(&after_ip));
+                if !in_another_block {
+                    assert!(
+                        validate_ip_safety(&after_ip).is_ok(),
+                        "Expected IPv4 address {} (one step after {}) to be accepted, but was rejected",
+                        after_ip,
+                        cidr
+                    );
+                }
+            }
+        }
+
+        // 2. Exhaustive IPv6 boundary verification
+        for (cidr, desc) in BLOCKED_IPV6_RANGES {
+            let net = Ipv6Net::from_str(cidr).unwrap();
+            let first = net.network();
+            let last = net.broadcast();
+
+            // First and last address must both be blocked
+            assert!(
+                validate_ip_safety(&IpAddr::V6(first)).is_err(),
+                "Failed to block first IPv6 address {} of {} ({})",
+                first,
+                cidr,
+                desc
+            );
+            assert!(
+                validate_ip_safety(&IpAddr::V6(last)).is_err(),
+                "Failed to block last IPv6 address {} of {} ({})",
+                last,
+                cidr,
+                desc
+            );
+
+            // Check boundary -1 (if valid u128)
+            let first_u128 = u128::from(first);
+            if first_u128 > 0 {
+                let raw_before = Ipv6Addr::from(first_u128 - 1);
+                let before_ip = IpAddr::V6(raw_before);
+                let unmapped = if let Some(v4) = raw_before.to_ipv4_mapped() {
+                    IpAddr::V4(v4)
+                } else {
+                    before_ip
+                };
+                let in_another_block = blocked_nets.iter().any(|b| b.net.contains(&unmapped));
+                if !in_another_block {
+                    assert!(
+                        validate_ip_safety(&before_ip).is_ok(),
+                        "Expected IPv6 address {} (one step before {}) to be accepted, but was rejected",
+                        before_ip,
+                        cidr
+                    );
+                }
+            }
+
+            // Check boundary +1
+            let last_u128 = u128::from(last);
+            if last_u128 < u128::MAX {
+                let raw_after = Ipv6Addr::from(last_u128 + 1);
+                let after_ip = IpAddr::V6(raw_after);
+                let unmapped = if let Some(v4) = raw_after.to_ipv4_mapped() {
+                    IpAddr::V4(v4)
+                } else {
+                    after_ip
+                };
+                let in_another_block = blocked_nets.iter().any(|b| b.net.contains(&unmapped));
+                if !in_another_block {
+                    assert!(
+                        validate_ip_safety(&after_ip).is_ok(),
+                        "Expected IPv6 address {} (one step after {}) to be accepted, but was rejected",
+                        after_ip,
+                        cidr
+                    );
                 }
             }
         }
