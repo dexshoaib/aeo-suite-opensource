@@ -200,7 +200,7 @@ pub async fn run_preflight(options: PreflightOptions<'_>) -> PreflightReport {
                 RobotsError::ClientError(code) => (
                     RESULT_DISALLOWED_ROBOTS,
                     format!(
-                        "robots.txt responded with HTTP {} client error (fail-closed per product ruling)",
+                        "robots.txt responded with HTTP {} client error (fail-closed per product decision)",
                         code
                     ),
                 ),

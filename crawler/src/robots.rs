@@ -6,7 +6,7 @@ pub enum RobotsError {
     RateLimited,
     #[error("Server returned 5xx server error ({0}) - fail closed per RFC 9309")]
     ServerError(u16),
-    #[error("Server returned 4xx client error ({0}) - fail closed per product ruling")]
+    #[error("Server returned 4xx client error ({0}) - fail closed per product decision")]
     ClientError(u16),
     #[error("Invalid HTTP status: {0}")]
     HttpStatusError(u16),
@@ -237,7 +237,7 @@ fn match_wildcard(p: &[u8], s: &[u8], exact_end: bool) -> bool {
     }
 }
 
-/// Evaluate robots.txt HTTP response status per RFC 9309 §2.3.1.2
+/// Evaluate robots.txt HTTP response status per RFC 9309 (with §2.3.1.3 divergence: other 4xx fails closed per product decision)
 pub fn evaluate_robots_http_response(
     status_code: u16,
     body: Option<&str>,
@@ -386,7 +386,7 @@ Disallow:
         let res429 = evaluate_robots_http_response(429, None, "/", "AEOSuiteBot");
         assert_eq!(res429.unwrap_err(), RobotsError::RateLimited);
 
-        // 401 / 403 returns ClientError (fail closed per product ruling #7)
+        // 401 / 403 returns ClientError (fail closed per product decision)
         let res401 = evaluate_robots_http_response(401, None, "/", "AEOSuiteBot");
         assert_eq!(res401.unwrap_err(), RobotsError::ClientError(401));
 
